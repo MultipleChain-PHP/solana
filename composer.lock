@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9b7280d8d7efb400b4e8c9ca3c65359d",
+    "content-hash": "56dd3ae7f3afa149f425693a0285d3b6",
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -1142,16 +1142,16 @@
         },
         {
             "name": "multiplechain/solana-sdk",
-            "version": "0.1.0",
+            "version": "0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/MultipleChain-PHP/solana-sdk.git",
-                "reference": "6e8cb715dcc51039a2348cadbb91a16ec9295a42"
+                "reference": "3658ad32e94b31a6af451b2143504572e97d0c19"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/MultipleChain-PHP/solana-sdk/zipball/6e8cb715dcc51039a2348cadbb91a16ec9295a42",
-                "reference": "6e8cb715dcc51039a2348cadbb91a16ec9295a42",
+                "url": "https://api.github.com/repos/MultipleChain-PHP/solana-sdk/zipball/3658ad32e94b31a6af451b2143504572e97d0c19",
+                "reference": "3658ad32e94b31a6af451b2143504572e97d0c19",
                 "shasum": ""
             },
             "require": {
@@ -1215,22 +1215,22 @@
             ],
             "support": {
                 "issues": "https://github.com/MultipleChain-PHP/solana-sdk/issues",
-                "source": "https://github.com/MultipleChain-PHP/solana-sdk/tree/0.1.0"
+                "source": "https://github.com/MultipleChain-PHP/solana-sdk/tree/0.1.1"
             },
-            "time": "2024-06-07T09:22:10+00:00"
+            "time": "2024-06-11T09:57:25+00:00"
         },
         {
             "name": "multiplechain/utils",
-            "version": "0.1.3",
+            "version": "0.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/MultipleChain-PHP/utils.git",
-                "reference": "dbb92da07ee0a768cc8122221659f2ceaa51900d"
+                "reference": "70c5675299aceb010bb2596cd0a1f2760ec4ae3f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/MultipleChain-PHP/utils/zipball/dbb92da07ee0a768cc8122221659f2ceaa51900d",
-                "reference": "dbb92da07ee0a768cc8122221659f2ceaa51900d",
+                "url": "https://api.github.com/repos/MultipleChain-PHP/utils/zipball/70c5675299aceb010bb2596cd0a1f2760ec4ae3f",
+                "reference": "70c5675299aceb010bb2596cd0a1f2760ec4ae3f",
                 "shasum": ""
             },
             "require": {
@@ -1264,9 +1264,9 @@
             "description": "MultipleChain Utils",
             "support": {
                 "issues": "https://github.com/MultipleChain-PHP/utils/issues",
-                "source": "https://github.com/MultipleChain-PHP/utils/tree/0.1.3"
+                "source": "https://github.com/MultipleChain-PHP/utils/tree/0.1.4"
             },
-            "time": "2024-06-02T07:11:51+00:00"
+            "time": "2024-06-11T09:47:47+00:00"
         },
         {
             "name": "nesbot/carbon",

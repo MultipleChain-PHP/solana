@@ -31,7 +31,7 @@ class Coin implements CoinInterface
      */
     public function getName(): string
     {
-        return 'Coin';
+        return 'Solana';
     }
 
     /**
@@ -39,7 +39,7 @@ class Coin implements CoinInterface
      */
     public function getSymbol(): string
     {
-        return 'COIN';
+        return 'SOL';
     }
 
     /**
@@ -47,7 +47,7 @@ class Coin implements CoinInterface
      */
     public function getDecimals(): int
     {
-        return 18;
+        return 9;
     }
 
     /**

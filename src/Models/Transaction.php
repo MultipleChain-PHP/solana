@@ -5,11 +5,21 @@ declare(strict_types=1);
 namespace MultipleChain\Solana\Models;
 
 use MultipleChain\Utils\Number;
+use MultipleChain\Solana\Utils;
 use MultipleChain\Solana\Provider;
+use MultipleChain\Enums\ErrorType;
+use MultipleChain\Solana\Assets\Coin;
 use MultipleChain\Enums\TransactionType;
 use MultipleChain\Enums\TransactionStatus;
+use MultipleChain\SolanaSDK\Util\Commitment;
 use MultipleChain\Interfaces\ProviderInterface;
+use MultipleChain\SolanaSDK\Types\TokenBalance;
+use MultipleChain\SolanaSDK\Programs\SystemProgram;
+use MultipleChain\SolanaSDK\Programs\SplTokenProgram;
+use MultipleChain\SolanaSDK\Types\ParsedInstruction;
+use MultipleChain\SolanaSDK\Types\ParsedMessageAccount;
 use MultipleChain\Interfaces\Models\TransactionInterface;
+use MultipleChain\SolanaSDK\Types\ParsedTransactionWithMeta;
 
 class Transaction implements TransactionInterface
 {
@@ -19,9 +29,9 @@ class Transaction implements TransactionInterface
     private string $id;
 
     /**
-     * @var mixed
+     * @var ParsedTransactionWithMeta|null
      */
-    private mixed $data;
+    private ?ParsedTransactionWithMeta $data = null;
 
     /**
      * @var Provider
@@ -47,13 +57,25 @@ class Transaction implements TransactionInterface
     }
 
     /**
-     * @return mixed
+     * @return ParsedTransactionWithMeta|null
      */
-    public function getData(): mixed
+    public function getData(): ?ParsedTransactionWithMeta
     {
-        $this->provider->isTestnet(); // just for phpstan
-        $this->data = 'data'; // example implementation
-        return $this->data;
+        try {
+            if (null !== $this->data) {
+                return $this->data;
+            }
+
+            $data = $this->provider->web3->getParsedTransaction($this->id, Commitment::confirmed());
+
+            if (null === $data) {
+                return null;
+            }
+
+            return $this->data = $data;
+        } catch (\Throwable $th) {
+            throw new \RuntimeException(ErrorType::RPC_REQUEST_ERROR->value);
+        }
     }
 
     /**
@@ -62,7 +84,18 @@ class Transaction implements TransactionInterface
      */
     public function wait(?int $ms = 4000): TransactionStatus
     {
-        return TransactionStatus::PENDING;
+        try {
+            $status = $this->getStatus();
+            if (TransactionStatus::PENDING != $status) {
+                return $status;
+            }
+
+            sleep($ms / 1000);
+
+            return $this->wait($ms);
+        } catch (\Throwable $th) {
+            return TransactionStatus::FAILED;
+        }
     }
 
     /**
@@ -70,7 +103,47 @@ class Transaction implements TransactionInterface
      */
     public function getType(): TransactionType
     {
-        return TransactionType::GENERAL;
+        $data = $this->getData();
+
+        if (null === $data) {
+            return TransactionType::GENERAL;
+        }
+
+        $instructions = $data->getTransaction()->getMessage()->getInstructions();
+
+        /**
+         * @var ParsedInstruction $instruction
+         */
+        foreach ($instructions as $instruction) {
+            $programId = $instruction->getProgramId();
+            if ($programId->equalsBase58(SplTokenProgram::SOLANA_TOKEN_PROGRAM_2022)) {
+                return TransactionType::TOKEN;
+            } elseif ($programId->equalsBase58(SplTokenProgram::SOLANA_TOKEN_PROGRAM)) {
+                $postBalances = $data->getMeta()->getPostTokenBalances();
+                /**
+                 * @var TokenBalance $postBalance
+                 */
+                $postBalance = array_reduce($postBalances, function ($carry, $item) {
+                    if (isset($item['mint'])) {
+                        return $item;
+                    }
+                    return $carry;
+                });
+
+                if (0 === $postBalance->getUiTokenAmount()->getDecimals()) {
+                    return TransactionType::NFT;
+                } else {
+                    return TransactionType::TOKEN;
+                }
+            } elseif (
+                $programId->equalsBase58(SystemProgram::programId()->toString()) &&
+                in_array($instruction->getParsed()['type'], ['createAccount', 'transfer'])
+            ) {
+                return TransactionType::COIN;
+            }
+        }
+
+        return TransactionType::CONTRACT;
     }
 
     /**
@@ -78,7 +151,10 @@ class Transaction implements TransactionInterface
      */
     public function getUrl(): string
     {
-        return 'https://example.com';
+        $node = $this->provider->node;
+        $transactionUrl = $this->provider->node['explorerUrl'] . 'tx/' . $this->id;
+        $transactionUrl .= 'mainnet-beta' !== $node['cluster'] ? '?cluster=' . $node['cluster'] : '';
+        return $transactionUrl;
     }
 
     /**
@@ -86,7 +162,17 @@ class Transaction implements TransactionInterface
      */
     public function getSigner(): string
     {
-        return '0x';
+        $data = $this->getData();
+        $keys = $data->getTransaction()->getMessage()->getAccountKeys();
+        return array_reduce($keys, function ($carry, $item) {
+            /**
+             * @var ParsedMessageAccount $item
+             */
+            if ($item->getSigner()) {
+                return $item->getPubkey()->toBase58();
+            }
+            return $carry;
+        }, '');
     }
 
     /**
@@ -94,7 +180,13 @@ class Transaction implements TransactionInterface
      */
     public function getFee(): Number
     {
-        return new Number('0');
+        $data = $this->getData();
+        return new Number(
+            Utils::fromLamports(
+                $data->getMeta()->getFee()
+            ),
+            (new Coin())->getDecimals()
+        );
     }
 
     /**
@@ -102,7 +194,7 @@ class Transaction implements TransactionInterface
      */
     public function getBlockNumber(): int
     {
-        return 0;
+        return $this->getData()?->getSlot();
     }
 
     /**
@@ -110,7 +202,7 @@ class Transaction implements TransactionInterface
      */
     public function getBlockTimestamp(): int
     {
-        return 0;
+        return $this->getData()?->getBlockTime() ?? 0;
     }
 
     /**
@@ -118,7 +210,8 @@ class Transaction implements TransactionInterface
      */
     public function getBlockConfirmationCount(): int
     {
-        return 0;
+        $slot = $this->provider->web3->getSlot();
+        return $slot - $this->getBlockNumber();
     }
 
     /**
@@ -126,6 +219,14 @@ class Transaction implements TransactionInterface
      */
     public function getStatus(): TransactionStatus
     {
-        return TransactionStatus::PENDING;
+        $data = $this->getData();
+
+        if (null === $data) {
+            return TransactionStatus::PENDING;
+        }
+
+        return null !== $data->getMeta()->getErr()
+            ? TransactionStatus::FAILED
+            : TransactionStatus::CONFIRMED;
     }
 }
