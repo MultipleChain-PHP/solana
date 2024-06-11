@@ -36,7 +36,7 @@ class Transaction implements TransactionInterface
     /**
      * @var Provider
      */
-    private Provider $provider;
+    protected Provider $provider;
 
     /**
      * @param string $id
@@ -124,7 +124,10 @@ class Transaction implements TransactionInterface
                  * @var TokenBalance $postBalance
                  */
                 $postBalance = array_reduce($postBalances, function ($carry, $item) {
-                    if (isset($item['mint'])) {
+                    /**
+                     * @var TokenBalance $item
+                     */
+                    if ('' !== $item->getMint()) {
                         return $item;
                     }
                     return $carry;

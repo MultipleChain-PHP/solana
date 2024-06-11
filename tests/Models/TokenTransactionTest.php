@@ -18,12 +18,18 @@ class TokenTransactionTest extends BaseTest
     private TokenTransaction $tx;
 
     /**
+     * @var TokenTransaction
+     */
+    private TokenTransaction $tx2022;
+
+    /**
      * @return void
      */
     public function setUp(): void
     {
         parent::setUp();
         $this->tx = new TokenTransaction($this->data->tokenTransferTx);
+        $this->tx2022 = new TokenTransaction($this->data->token2022TransferTx);
     }
 
     /**
@@ -33,6 +39,10 @@ class TokenTransactionTest extends BaseTest
     {
         $this->assertEquals(
             strtolower($this->tx->getReceiver()),
+            strtolower($this->data->modelTestReceiver)
+        );
+        $this->assertEquals(
+            strtolower($this->tx2022->getReceiver()),
             strtolower($this->data->modelTestReceiver)
         );
     }
@@ -46,6 +56,25 @@ class TokenTransactionTest extends BaseTest
             strtolower($this->tx->getSender()),
             strtolower($this->data->modelTestSender)
         );
+        $this->assertEquals(
+            strtolower($this->tx2022->getSender()),
+            strtolower($this->data->modelTestSender)
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testProgram(): void
+    {
+        $this->assertEquals(
+            strtolower($this->tx->getAddress()),
+            strtolower($this->data->tokenTestAddress)
+        );
+        $this->assertEquals(
+            strtolower($this->tx2022->getAddress()),
+            strtolower($this->data->token2022TestAddress)
+        );
     }
 
     /**
@@ -57,6 +86,10 @@ class TokenTransactionTest extends BaseTest
             $this->tx->getAmount()->toFloat(),
             $this->data->tokenAmount
         );
+        $this->assertEquals(
+            $this->tx2022->getAmount()->toFloat(),
+            $this->data->tokenAmount
+        );
     }
 
     /**
@@ -66,6 +99,10 @@ class TokenTransactionTest extends BaseTest
     {
         $this->assertEquals(
             $this->tx->getType(),
+            TransactionType::TOKEN
+        );
+        $this->assertEquals(
+            $this->tx2022->getType(),
             TransactionType::TOKEN
         );
     }
@@ -95,6 +132,33 @@ class TokenTransactionTest extends BaseTest
 
         $this->assertEquals(
             $this->tx->verifyTransfer(
+                AssetDirection::INCOMING,
+                $this->data->modelTestSender,
+                $this->data->tokenAmount
+            ),
+            TransactionStatus::FAILED
+        );
+
+        $this->assertEquals(
+            $this->tx2022->verifyTransfer(
+                AssetDirection::INCOMING,
+                $this->data->modelTestReceiver,
+                $this->data->tokenAmount
+            ),
+            TransactionStatus::CONFIRMED
+        );
+
+        $this->assertEquals(
+            $this->tx2022->verifyTransfer(
+                AssetDirection::OUTGOING,
+                $this->data->modelTestSender,
+                $this->data->tokenAmount
+            ),
+            TransactionStatus::CONFIRMED
+        );
+
+        $this->assertEquals(
+            $this->tx2022->verifyTransfer(
                 AssetDirection::INCOMING,
                 $this->data->modelTestSender,
                 $this->data->tokenAmount
