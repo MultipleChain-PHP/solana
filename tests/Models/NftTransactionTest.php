@@ -55,7 +55,7 @@ class NftTransactionTest extends BaseTest
     {
         $this->assertEquals(
             strtolower($this->tx->getSigner()),
-            strtolower($this->data->modelTestReceiver)
+            strtolower($this->data->modelTestSender)
         );
     }
 
