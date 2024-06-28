@@ -46,7 +46,7 @@ class CoinTest extends BaseTest
      */
     public function testDecimals(): void
     {
-        $this->assertEquals(18, $this->coin->getDecimals());
+        $this->assertEquals(9, $this->coin->getDecimals());
     }
 
     /**

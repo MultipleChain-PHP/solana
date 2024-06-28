@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace MultipleChain\Solana\Services;
 
 use MultipleChain\Solana\Provider;
+use MultipleChain\SolanaSDK\Keypair;
+use MultipleChain\SolanaSDK\Transaction;
+use MultipleChain\SolanaSDK\Util\Commitment;
 use MultipleChain\Interfaces\ProviderInterface;
 use MultipleChain\Interfaces\Services\TransactionSignerInterface;
 
 class TransactionSigner implements TransactionSignerInterface
 {
     /**
-     * @var mixed
+     * @var Transaction
      */
-    private mixed $rawData;
+    private Transaction $rawData;
 
     /**
-     * @var mixed
+     * @var string
      */
-    private mixed $signedData;
+    private string $signedData;
 
     /**
      * @var Provider
@@ -42,9 +45,16 @@ class TransactionSigner implements TransactionSignerInterface
      */
     public function sign(string $privateKey): TransactionSignerInterface
     {
-        // example implementation
-        $this->provider->isTestnet(); // just for phpstan
-        $this->signedData = 'signedData';
+        $this->rawData->setRecentBlockhash(
+            $this->provider->web3->getLatestBlockhash(
+                Commitment::finalized()
+            )['blockhash']
+        );
+
+        $this->rawData->sign(Keypair::fromPrivateKey($privateKey));
+
+        $this->signedData = $this->rawData->serialize(false, true);
+
         return $this;
     }
 
@@ -53,12 +63,11 @@ class TransactionSigner implements TransactionSignerInterface
      */
     public function send(): string
     {
-        // example implementation
-        return 'transactionId';
+        return $this->provider->web3->sendRawTransaction($this->signedData);
     }
 
     /**
-     * @return mixed
+     * @return Transaction
      */
     public function getRawData(): mixed
     {
@@ -66,7 +75,7 @@ class TransactionSigner implements TransactionSignerInterface
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getSignedData(): mixed
     {
