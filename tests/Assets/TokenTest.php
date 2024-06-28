@@ -17,12 +17,18 @@ class TokenTest extends BaseTest
     private Token $token;
 
     /**
+     * @var Token
+     */
+    private Token $token2022;
+
+    /**
      * @return void
      */
     public function setUp(): void
     {
         parent::setUp();
         $this->token = new Token($this->data->tokenTestAddress);
+        $this->token2022 = new Token($this->data->token2022TestAddress);
     }
 
     /**
@@ -30,7 +36,8 @@ class TokenTest extends BaseTest
      */
     public function testName(): void
     {
-        $this->assertEquals('MyToken', $this->token->getName());
+        $this->assertEquals('Example', $this->token->getName());
+        $this->assertEquals('Example Token 2022', $this->token2022->getName());
     }
 
     /**
@@ -38,7 +45,8 @@ class TokenTest extends BaseTest
      */
     public function testSymbol(): void
     {
-        $this->assertEquals('MTK', $this->token->getSymbol());
+        $this->assertEquals('EXM', $this->token->getSymbol());
+        $this->assertEquals('EXM2', $this->token2022->getSymbol());
     }
 
     /**
@@ -46,7 +54,8 @@ class TokenTest extends BaseTest
      */
     public function testDecimals(): void
     {
-        $this->assertEquals(18, $this->token->getDecimals());
+        $this->assertEquals(8, $this->token->getDecimals());
+        $this->assertEquals(9, $this->token2022->getDecimals());
     }
 
     /**
@@ -58,6 +67,10 @@ class TokenTest extends BaseTest
             $this->data->tokenBalanceTestAmount,
             $this->token->getBalance($this->data->balanceTestAddress)->toFloat()
         );
+        $this->assertEquals(
+            $this->data->tokenBalanceTestAmount,
+            $this->token2022->getBalance($this->data->balanceTestAddress)->toFloat()
+        );
     }
 
     /**
@@ -66,8 +79,12 @@ class TokenTest extends BaseTest
     public function testTotalSupply(): void
     {
         $this->assertEquals(
-            1000000,
+            100000000000,
             $this->token->getTotalSupply()->toFloat()
+        );
+        $this->assertEquals(
+            10000000,
+            $this->token2022->getTotalSupply()->toFloat()
         );
     }
 
@@ -96,6 +113,38 @@ class TokenTest extends BaseTest
         $afterBalance = $this->token->getBalance($this->data->receiverTestAddress);
 
         $transferNumber = new Number($this->data->tokenTransferTestAmount, $this->token->getDecimals());
+
+        $this->assertEquals(
+            $afterBalance->toString(),
+            $beforeBalance->add($transferNumber)->toString()
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testTransfer2022(): void
+    {
+        $signer = $this->token2022->transfer(
+            $this->data->senderTestAddress,
+            $this->data->receiverTestAddress,
+            $this->data->tokenTransferTestAmount
+        );
+
+        $signer = $signer->sign($this->data->senderPrivateKey);
+
+        if (!$this->data->tokenTransferTestIsActive) {
+            $this->assertTrue(true);
+            return;
+        }
+
+        $beforeBalance = $this->token2022->getBalance($this->data->receiverTestAddress);
+
+        (new Transaction($signer->send()))->wait();
+
+        $afterBalance = $this->token2022->getBalance($this->data->receiverTestAddress);
+
+        $transferNumber = new Number($this->data->tokenTransferTestAmount, $this->token2022->getDecimals());
 
         $this->assertEquals(
             $afterBalance->toString(),
@@ -137,6 +186,37 @@ class TokenTest extends BaseTest
     /**
      * @return void
      */
+    public function testApproveAndAllowance2022(): void
+    {
+        $signer = $this->token2022->approve(
+            $this->data->senderTestAddress,
+            $this->data->receiverTestAddress,
+            $this->data->tokenApproveTestAmount
+        );
+
+        $signer = $signer->sign($this->data->senderPrivateKey);
+
+        if (!$this->data->tokenApproveTestIsActive) {
+            $this->assertTrue(true);
+            return;
+        }
+
+        (new Transaction($signer->send()))->wait();
+
+        $allowance = $this->token2022->getAllowance(
+            $this->data->senderTestAddress,
+            $this->data->receiverTestAddress
+        );
+
+        $this->assertEquals(
+            $this->data->tokenApproveTestAmount,
+            $allowance->toFloat()
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testTransferFrom(): void
     {
         $signer = $this->token->transferFrom(
@@ -158,6 +238,37 @@ class TokenTest extends BaseTest
         (new Transaction($signer->send()))->wait();
 
         $afterBalance = $this->token->getBalance($this->data->receiverTestAddress);
+
+        $this->assertEquals(
+            $afterBalance->toString(),
+            $beforeBalance->add(new Number(2))->toString()
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testTransferFrom2022(): void
+    {
+        $signer = $this->token2022->transferFrom(
+            $this->data->receiverTestAddress,
+            $this->data->senderTestAddress,
+            $this->data->receiverTestAddress,
+            2
+        );
+
+        $signer = $signer->sign($this->data->receiverPrivateKey);
+
+        if (!$this->data->tokenTransferFromTestIsActive) {
+            $this->assertTrue(true);
+            return;
+        }
+
+        $beforeBalance = $this->token2022->getBalance($this->data->receiverTestAddress);
+
+        (new Transaction($signer->send()))->wait();
+
+        $afterBalance = $this->token2022->getBalance($this->data->receiverTestAddress);
 
         $this->assertEquals(
             $afterBalance->toString(),

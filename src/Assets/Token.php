@@ -6,17 +6,62 @@ namespace MultipleChain\Solana\Assets;
 
 use MultipleChain\Utils\Number;
 use MultipleChain\Enums\ErrorType;
+use MultipleChain\SolanaSDK\PublicKey;
+use MultipleChain\SolanaSDK\Transaction;
 use MultipleChain\Interfaces\Assets\TokenInterface;
 use MultipleChain\Solana\Services\TransactionSigner;
+use MultipleChain\SolanaSDK\Programs\SplTokenProgram;
 
 class Token extends Contract implements TokenInterface
 {
+    /**
+     * @var array<mixed>
+     */
+    private array $metadata = [];
+
+    /**
+     * @return array<mixed>
+     */
+    public function getMetadata(): array
+    {
+        if (!empty($this->metadata)) {
+            return $this->metadata;
+        }
+
+        $accountInfo = $this->provider->web3->getParsedAccountInfo($this->getAddress());
+
+        if (!$accountInfo) {
+            return [];
+        }
+
+        return $this->metadata = SplTokenProgram::getTokenMetadata(
+            $this->provider->web3,
+            $this->pubKey,
+            $accountInfo->getOwner()
+        );
+    }
+
+    /**
+     * @return PublicKey
+     */
+    public function getProgramId(): PublicKey
+    {
+        $accountInfo = $this->provider->web3->getParsedAccountInfo($this->getAddress());
+
+        if (!$accountInfo) {
+            return new PublicKey(SplTokenProgram::SOLANA_TOKEN_PROGRAM);
+        }
+
+        return $accountInfo->getOwner();
+    }
+
     /**
      * @return string
      */
     public function getName(): string
     {
-        return 'Token';
+        $this->getMetadata();
+        return $this->metadata['name'] ?? '';
     }
 
     /**
@@ -24,7 +69,8 @@ class Token extends Contract implements TokenInterface
      */
     public function getSymbol(): string
     {
-        return 'TOKEN';
+        $this->getMetadata();
+        return $this->metadata['symbol'] ?? '';
     }
 
     /**
@@ -32,7 +78,8 @@ class Token extends Contract implements TokenInterface
      */
     public function getDecimals(): int
     {
-        return 18;
+        $this->getMetadata();
+        return $this->metadata['decimals'] ?? 0;
     }
 
     /**
@@ -41,7 +88,25 @@ class Token extends Contract implements TokenInterface
      */
     public function getBalance(string $owner): Number
     {
-        return new Number('0');
+        try {
+            $res = $this->provider->web3->getParsedTokenAccountsByOwner(
+                $owner,
+                [
+                    'mint' => $this->getAddress()
+                ]
+            );
+
+            if (!isset($res[0])) {
+                return new Number(0);
+            }
+
+            return new Number(
+                $res[0]->getAccount()->getData()->getParsed()['info']['tokenAmount']['uiAmount'] ?? 0,
+                $this->getDecimals()
+            );
+        } catch (\Exception $e) {
+            return new Number(0);
+        }
     }
 
     /**
@@ -49,17 +114,55 @@ class Token extends Contract implements TokenInterface
      */
     public function getTotalSupply(): Number
     {
-        return new Number('0');
+        return new Number($this->provider->web3->getTokenSupply($this->getAddress())['uiAmount'], $this->getDecimals());
     }
 
     /**
      * @param string $owner
-     * @param string $spender
+     * @param string|null $spender
      * @return Number
      */
-    public function getAllowance(string $owner, string $spender): Number
+    public function getAllowance(string $owner, ?string $spender = null): Number
     {
-        return new Number('0');
+        try {
+            $ownerResult = $this->provider->web3->getParsedTokenAccountsByOwner(
+                $owner,
+                [
+                    'mint' => $this->getAddress()
+                ]
+            );
+
+            if (!isset($ownerResult[0])) {
+                return new Number(0);
+            }
+
+            $parsed = $ownerResult[0]->getAccount()->getData()->getParsed();
+
+            if (!isset($parsed['info']['delegatedAmount'])) {
+                return new Number(0);
+            }
+
+            if (!$spender) {
+                if (
+                    strtolower($parsed['info']['delegate']) !== strtolower($spender)
+                ) {
+                    return new Number(0);
+                }
+            }
+
+            return new Number($parsed['info']['delegatedAmount']['uiAmount'], $this->getDecimals());
+        } catch (\Exception $e) {
+            return new Number(0);
+        }
+    }
+
+    /**
+     * @param float $amount
+     * @return int
+     */
+    private function fromAmount(float $amount): int
+    {
+        return (int) ($amount * (10 ** $this->getDecimals()));
     }
 
     /**
@@ -70,7 +173,7 @@ class Token extends Contract implements TokenInterface
      */
     public function transfer(string $sender, string $receiver, float $amount): TransactionSigner
     {
-        return new TransactionSigner('example');
+        return $this->transferFrom($sender, $sender, $receiver, $amount);
     }
 
     /**
@@ -86,7 +189,73 @@ class Token extends Contract implements TokenInterface
         string $receiver,
         float $amount
     ): TransactionSigner {
-        return new TransactionSigner('example');
+        if ($amount < 0) {
+            throw new \RuntimeException(ErrorType::INVALID_AMOUNT->value);
+        }
+
+        if ($amount > $this->getBalance($owner)->toFloat()) {
+            throw new \RuntimeException(ErrorType::INSUFFICIENT_BALANCE->value);
+        }
+
+        if (strtolower($spender) !== strtolower($owner)) {
+            $allowance = $this->getAllowance($owner, $spender);
+
+            if (0 === $allowance->toFloat()) {
+                throw new \RuntimeException(ErrorType::UNAUTHORIZED_ADDRESS->value);
+            }
+
+            if ($amount > $allowance->toFloat()) {
+                throw new \RuntimeException(ErrorType::INVALID_AMOUNT->value);
+            }
+        }
+
+        $transaction = new Transaction();
+        $programId = $this->getProgramId();
+        $ownerPubKey = new PublicKey($owner);
+        $spenderPubKey = new PublicKey($spender);
+        $receiverPubKey = new PublicKey($receiver);
+        $transferAmount = $this->fromAmount($amount);
+
+        $ownerAccount = SplTokenProgram::getAssociatedTokenAddress(
+            $this->pubKey,
+            $ownerPubKey,
+            false,
+            $programId
+        );
+
+        $receiverAccount = SplTokenProgram::getAssociatedTokenAddress(
+            $this->pubKey,
+            $receiverPubKey,
+            false,
+            $programId
+        );
+
+        if (!$this->provider->web3->getParsedAccountInfo($receiverAccount->toString())) {
+            $transaction->add(
+                SplTokenProgram::createAssociatedTokenAccountInstruction(
+                    $spenderPubKey,
+                    $receiverAccount,
+                    $receiverPubKey,
+                    $this->pubKey,
+                    $programId,
+                )
+            );
+        }
+
+        $transaction->add(
+            SplTokenProgram::createTransferInstruction(
+                $ownerAccount,
+                $receiverAccount,
+                $spenderPubKey,
+                $transferAmount,
+                [],
+                $programId
+            )
+        );
+
+        $transaction->setFeePayer($spenderPubKey);
+
+        return new TransactionSigner($transaction);
     }
 
     /**
@@ -97,6 +266,40 @@ class Token extends Contract implements TokenInterface
      */
     public function approve(string $owner, string $spender, float $amount): TransactionSigner
     {
-        return new TransactionSigner('example');
+        if ($amount < 0) {
+            throw new \RuntimeException(ErrorType::INVALID_AMOUNT->value);
+        }
+
+        if ($amount > $this->getBalance($owner)->toFloat()) {
+            throw new \RuntimeException(ErrorType::INSUFFICIENT_BALANCE->value);
+        }
+
+        $transaction = new Transaction();
+        $programId = $this->getProgramId();
+        $ownerPubKey = new PublicKey($owner);
+        $spenderPubKey = new PublicKey($spender);
+        $approveAmount = $this->fromAmount($amount);
+
+        $ownerAccount = SplTokenProgram::getAssociatedTokenAddress(
+            $this->pubKey,
+            $ownerPubKey,
+            false,
+            $programId
+        );
+
+        $transaction->add(
+            SplTokenProgram::createApproveInstruction(
+                $ownerAccount,
+                $spenderPubKey,
+                $ownerPubKey,
+                $approveAmount,
+                [],
+                $programId
+            )
+        );
+
+        $transaction->setFeePayer($ownerPubKey);
+
+        return new TransactionSigner($transaction);
     }
 }
