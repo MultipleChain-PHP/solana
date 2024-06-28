@@ -17,12 +17,18 @@ class NftTest extends BaseTest
     private NFT $nft;
 
     /**
+     * @var string
+     */
+    private string $id;
+
+    /**
      * @return void
      */
     public function setUp(): void
     {
         parent::setUp();
         $this->nft = new NFT($this->data->nftTestAddress);
+        $this->id = 'F8kj1xPSG69amgDS7XfmkHgAAWgiJ391NFTkxJL2e5Di';
     }
 
     /**
@@ -30,7 +36,7 @@ class NftTest extends BaseTest
      */
     public function testName(): void
     {
-        $this->assertEquals('NFT2', $this->nft->getName());
+        $this->assertEquals('Test NFT Collection', $this->nft->getName());
     }
 
     /**
@@ -38,7 +44,7 @@ class NftTest extends BaseTest
      */
     public function testSymbol(): void
     {
-        $this->assertEquals('NFT2', $this->nft->getSymbol());
+        $this->assertEquals('TNFT', $this->nft->getSymbol());
     }
 
     /**
@@ -59,7 +65,7 @@ class NftTest extends BaseTest
     {
         $this->assertEquals(
             strtolower($this->data->balanceTestAddress),
-            strtolower($this->nft->getOwner(600))
+            strtolower($this->nft->getOwner($this->id))
         );
     }
 
@@ -69,8 +75,8 @@ class NftTest extends BaseTest
     public function testTokenURI(): void
     {
         $this->assertEquals(
-            '',
-            $this->nft->getTokenURI(600)
+            'https://arweave.net/8SvLYJ8CgpxzihKD2r-DKRmjPlyxa_WGeuA8ARI0ems',
+            $this->nft->getTokenURI($this->id)
         );
     }
 
@@ -81,7 +87,7 @@ class NftTest extends BaseTest
     {
         $this->assertEquals(
             null,
-            $this->nft->getApproved(600)
+            $this->nft->getApproved($this->id)
         );
     }
 
