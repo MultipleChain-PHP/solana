@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "56dd3ae7f3afa149f425693a0285d3b6",
+    "content-hash": "d7e57a5e8def16ce6c4538255f0727d5",
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -1142,16 +1142,16 @@
         },
         {
             "name": "multiplechain/solana-sdk",
-            "version": "0.1.1",
+            "version": "0.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/MultipleChain-PHP/solana-sdk.git",
-                "reference": "3658ad32e94b31a6af451b2143504572e97d0c19"
+                "reference": "455e4a0ec1d24a3a025270b8488ed6bdba179760"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/MultipleChain-PHP/solana-sdk/zipball/3658ad32e94b31a6af451b2143504572e97d0c19",
-                "reference": "3658ad32e94b31a6af451b2143504572e97d0c19",
+                "url": "https://api.github.com/repos/MultipleChain-PHP/solana-sdk/zipball/455e4a0ec1d24a3a025270b8488ed6bdba179760",
+                "reference": "455e4a0ec1d24a3a025270b8488ed6bdba179760",
                 "shasum": ""
             },
             "require": {
@@ -1215,9 +1215,9 @@
             ],
             "support": {
                 "issues": "https://github.com/MultipleChain-PHP/solana-sdk/issues",
-                "source": "https://github.com/MultipleChain-PHP/solana-sdk/tree/0.1.1"
+                "source": "https://github.com/MultipleChain-PHP/solana-sdk/tree/0.1.2"
             },
-            "time": "2024-06-11T09:57:25+00:00"
+            "time": "2024-07-05T05:42:48+00:00"
         },
         {
             "name": "multiplechain/utils",

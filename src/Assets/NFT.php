@@ -167,7 +167,7 @@ class NFT extends Contract implements NftInterface
         }
 
         if (strtolower($spender) !== strtolower($owner)) {
-            if (strtolower($this->getApproved($tokenId)) !== strtolower($spender)) {
+            if (strtolower($this->getApproved($tokenId) ?? '') !== strtolower($spender)) {
                 throw new \RuntimeException(ErrorType::UNAUTHORIZED_ADDRESS->value);
             }
         }
@@ -262,7 +262,7 @@ class NFT extends Contract implements NftInterface
             )
         );
 
-        $transaction->setFeePayer($spenderPubKey);
+        $transaction->setFeePayer($ownerPubKey);
 
         return new TransactionSigner($transaction);
     }

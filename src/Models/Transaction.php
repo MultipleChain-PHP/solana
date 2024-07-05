@@ -85,8 +85,9 @@ class Transaction implements TransactionInterface
     public function wait(?int $ms = 4000): TransactionStatus
     {
         try {
-            $status = $this->getStatus();
-            if (TransactionStatus::PENDING != $status) {
+            $this->provider->web3->confirmTransaction($this->id);
+
+            if (TransactionStatus::PENDING != ($status = $this->getStatus())) {
                 return $status;
             }
 

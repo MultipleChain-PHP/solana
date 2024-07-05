@@ -8,6 +8,7 @@ use MultipleChain\Utils\Number;
 use MultipleChain\Enums\ErrorType;
 use MultipleChain\SolanaSDK\PublicKey;
 use MultipleChain\SolanaSDK\Transaction;
+use MultipleChain\SolanaSDK\Util\Commitment;
 use MultipleChain\Interfaces\Assets\TokenInterface;
 use MultipleChain\Solana\Services\TransactionSigner;
 use MultipleChain\SolanaSDK\Programs\SplTokenProgram;
@@ -93,7 +94,8 @@ class Token extends Contract implements TokenInterface
                 $owner,
                 [
                     'mint' => $this->getAddress()
-                ]
+                ],
+                Commitment::confirmed()
             );
 
             if (!isset($res[0])) {
@@ -129,7 +131,8 @@ class Token extends Contract implements TokenInterface
                 $owner,
                 [
                     'mint' => $this->getAddress()
-                ]
+                ],
+                Commitment::confirmed()
             );
 
             if (!isset($ownerResult[0])) {
@@ -142,7 +145,7 @@ class Token extends Contract implements TokenInterface
                 return new Number(0);
             }
 
-            if (!$spender) {
+            if ($spender) {
                 if (
                     strtolower($parsed['info']['delegate']) !== strtolower($spender)
                 ) {
