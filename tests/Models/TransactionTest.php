@@ -21,6 +21,7 @@ class TransactionTest extends BaseTest
      */
     public function setUp(): void
     {
+        sleep(5);
         parent::setUp();
         $this->tx = new Transaction($this->data->coinTransferTx);
     }
