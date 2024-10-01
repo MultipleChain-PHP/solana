@@ -56,7 +56,8 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
             return $parsed['info']['mint'];
         }
 
-        $postBalance = array_reduce($data->getMeta()->getPostTokenBalances(), function ($carry, $balance) {
+        $postBalance = array_reduce($data->getMeta()?->getPostTokenBalances() ?? [], function ($carry, $balance) {
+            $balance = $balance->toArray();
             if (isset($balance['mint'])) {
                 return $balance;
             }
@@ -143,9 +144,9 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
         $amount = floatval($parsed['info']['amount']);
 
         $postBalance = array_reduce(
-            $data->getMeta()->getPostTokenBalances(),
-            function ($carry, TokenBalance | array $balance) {
-                $balance = $balance instanceof TokenBalance ? $balance->toArray() : $balance;
+            $data->getMeta()?->getPostTokenBalances() ?? [],
+            function ($carry, TokenBalance $balance) {
+                $balance = $balance->toArray();
                 if (isset($balance['mint'])) {
                     return $balance;
                 }
@@ -154,7 +155,7 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
             null
         );
 
-        $decimals = (int) $postBalance['uiTokenAmount']['decimals'] ?? 0;
+        $decimals = (int) $postBalance['uiTokenAmount']['decimals'];
 
         return new Number(Math::div($amount, Math::pow(10, $decimals, $decimals)), $decimals);
     }

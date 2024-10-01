@@ -120,7 +120,7 @@ class Transaction implements TransactionInterface
             if ($programId->equalsBase58(SplTokenProgram::SOLANA_TOKEN_PROGRAM_2022)) {
                 return TransactionType::TOKEN;
             } elseif ($programId->equalsBase58(SplTokenProgram::SOLANA_TOKEN_PROGRAM)) {
-                $postBalances = $data->getMeta()->getPostTokenBalances();
+                $postBalances = $data->getMeta()?->getPostTokenBalances() ?? [];
                 /**
                  * @var TokenBalance $postBalance
                  */
@@ -167,6 +167,11 @@ class Transaction implements TransactionInterface
     public function getSigner(): string
     {
         $data = $this->getData();
+
+        if (null === $data) {
+            return '';
+        }
+
         $keys = $data->getTransaction()->getMessage()->getAccountKeys();
         return array_reduce($keys, function ($carry, $item) {
             /**
@@ -187,7 +192,7 @@ class Transaction implements TransactionInterface
         $data = $this->getData();
         return new Number(
             Utils::fromLamports(
-                $data->getMeta()->getFee()
+                $data?->getMeta()?->getFee() ?? 0,
             ),
             (new Coin())->getDecimals()
         );
@@ -198,7 +203,7 @@ class Transaction implements TransactionInterface
      */
     public function getBlockNumber(): int
     {
-        return $this->getData()?->getSlot();
+        return $this->getData()?->getSlot() ?? 0;
     }
 
     /**
@@ -229,7 +234,7 @@ class Transaction implements TransactionInterface
             return TransactionStatus::PENDING;
         }
 
-        return null !== $data->getMeta()->getErr()
+        return null !== $data->getMeta()?->getErr()
             ? TransactionStatus::FAILED
             : TransactionStatus::CONFIRMED;
     }

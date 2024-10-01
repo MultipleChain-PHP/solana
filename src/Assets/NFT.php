@@ -34,18 +34,21 @@ class NFT extends Contract implements NftInterface
                 $this->provider->web3,
                 $pubKey ?? $this->pubKey,
                 new PublicKey(SplTokenProgram::SOLANA_TOKEN_PROGRAM)
-            );
+            ) ?? [];
         } catch (\Exception $e) {
             return [];
         }
     }
 
     /**
+     * @param PublicKey $nftId
      * @return PublicKey
      */
-    public function getProgramId(): PublicKey
+    public function getProgramId(PublicKey $nftId): PublicKey
     {
-        $accountInfo = $this->provider->web3->getParsedAccountInfo($this->getAddress());
+        $accountInfo = $this->provider->web3->getParsedAccountInfo(
+            $nftId->toString()
+        );
 
         if (!$accountInfo) {
             return new PublicKey(SplTokenProgram::SOLANA_TOKEN_PROGRAM);
@@ -107,9 +110,9 @@ class NFT extends Contract implements NftInterface
      */
     public function getOwner(int|string $tokenId): string
     {
-        $accounts = $this->provider->web3->getTokenLargestAccounts($tokenId);
+        $accounts = $this->provider->web3->getTokenLargestAccounts(strval($tokenId));
         $accountInfo = $this->provider->web3->getParsedAccountInfo($accounts[0]['address']);
-        return $accountInfo->getData()->getParsed()['info']['owner'];
+        return $accountInfo?->getData()->getParsed()['info']['owner'] ?? '';
     }
 
     /**
@@ -128,9 +131,9 @@ class NFT extends Contract implements NftInterface
      */
     public function getApproved(int|string $tokenId): ?string
     {
-        $accounts = $this->provider->web3->getTokenLargestAccounts($tokenId);
+        $accounts = $this->provider->web3->getTokenLargestAccounts(strval($tokenId));
         $accountInfo = $this->provider->web3->getParsedAccountInfo($accounts[0]['address']);
-        return $accountInfo->getData()->getParsed()['info']['delegate'] ?? null;
+        return $accountInfo?->getData()->getParsed()['info']['delegate'] ?? null;
     }
 
     /**
