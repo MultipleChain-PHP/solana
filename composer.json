@@ -1,6 +1,6 @@
 {
     "name": "multiplechain/solana",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "MultipleChain Solana",
     "type": "library",
     "license": "MIT",
@@ -28,7 +28,7 @@
         }
     ],
     "require": {
-        "multiplechain/utils": "^0.1.4",
+        "multiplechain/utils": "^0.1.5",
         "multiplechain/definitions": "^0.1.2",
         "multiplechain/solana-sdk": "^0.1.2"
     },

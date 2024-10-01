@@ -8,6 +8,7 @@ use MultipleChain\Utils\Math;
 use MultipleChain\Utils\Number;
 use MultipleChain\Enums\AssetDirection;
 use MultipleChain\Enums\TransactionStatus;
+use MultipleChain\SolanaSDK\Types\TokenBalance;
 use MultipleChain\SolanaSDK\Types\ParsedInstruction;
 use MultipleChain\SolanaSDK\Types\ParsedTransactionWithMeta;
 use MultipleChain\Interfaces\Models\TokenTransactionInterface;
@@ -139,16 +140,21 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
             );
         }
 
-        $amount = $parsed['info']['amount'];
+        $amount = floatval($parsed['info']['amount']);
 
-        $postBalance = array_reduce($data->getMeta()->getPostTokenBalances(), function ($carry, $balance) {
-            if (isset($balance['mint'])) {
-                return $balance;
-            }
-            return $carry;
-        }, null);
+        $postBalance = array_reduce(
+            $data->getMeta()->getPostTokenBalances(),
+            function ($carry, TokenBalance | array $balance) {
+                $balance = $balance instanceof TokenBalance ? $balance->toArray() : $balance;
+                if (isset($balance['mint'])) {
+                    return $balance;
+                }
+                return $carry;
+            },
+            null
+        );
 
-        $decimals = $postBalance['uiTokenAmount']['decimals'] ?? 0;
+        $decimals = (int) $postBalance['uiTokenAmount']['decimals'] ?? 0;
 
         return new Number(Math::div($amount, Math::pow(10, $decimals, $decimals)), $decimals);
     }
