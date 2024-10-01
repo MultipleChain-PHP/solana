@@ -39,7 +39,7 @@ class Token extends Contract implements TokenInterface
             $this->provider->web3,
             $this->pubKey,
             $accountInfo->getOwner()
-        );
+        ) ?? [];
     }
 
     /**
@@ -203,7 +203,7 @@ class Token extends Contract implements TokenInterface
         if (strtolower($spender) !== strtolower($owner)) {
             $allowance = $this->getAllowance($owner, $spender);
 
-            if (0 === $allowance->toFloat()) {
+            if (0 == $allowance->toFloat()) {
                 throw new \RuntimeException(ErrorType::UNAUTHORIZED_ADDRESS->value);
             }
 

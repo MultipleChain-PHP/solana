@@ -29,6 +29,8 @@ class BaseTest extends TestCase
         $this->provider = new Provider([
             'testnet' => true
         ]);
+
+        sleep(2);
     }
 
     /**

@@ -53,7 +53,8 @@ class NftTransaction extends ContractTransaction implements NftTransactionInterf
             return $parsed['info']['mint'];
         }
 
-        $postBalance = array_reduce($data->getMeta()->getPostTokenBalances(), function ($carry, $balance) {
+        $postBalance = array_reduce($data->getMeta()?->getPostTokenBalances() ?? [], function ($carry, $balance) {
+            $balance = $balance->toArray();
             if (isset($balance['mint'])) {
                 return $balance;
             }
@@ -78,9 +79,9 @@ class NftTransaction extends ContractTransaction implements NftTransactionInterf
             return '';
         }
 
-        $balances = $data->getMeta()->getPostTokenBalances();
+        $balances = $data->getMeta()?->getPostTokenBalances() ?? [];
 
-        if (null === $balances || 0 === count($balances)) {
+        if (0 === count($balances)) {
             return '';
         }
 

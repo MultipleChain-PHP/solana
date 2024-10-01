@@ -17,7 +17,7 @@ class ContractTransaction extends Transaction implements ContractTransactionInte
     private function findTransferInstruction(ParsedTransactionWithMeta $data): ?ParsedInstruction
     {
         $length = count($data->getTransaction()->getMessage()->getInstructions());
-        return $data->getTransaction()->getMessage()->getInstructions()[$length - 1];
+        return $data->getTransaction()->getMessage()->getInstructions()[$length - 1] ?? null;
     }
 
     /**
