@@ -6,7 +6,9 @@ namespace MultipleChain\Solana\Assets;
 
 use MultipleChain\Solana\Provider;
 use MultipleChain\SolanaSDK\PublicKey;
+use MultipleChain\SolanaSDK\Util\Commitment;
 use MultipleChain\Interfaces\ProviderInterface;
+use MultipleChain\SolanaSDK\Programs\SplTokenProgram;
 use MultipleChain\Interfaces\Assets\ContractInterface;
 
 class Contract implements ContractInterface
@@ -93,5 +95,43 @@ class Contract implements ContractInterface
     public function createTransactionData(string $method, string $from, mixed ...$args): mixed
     {
         throw new \Exception('Method not implemented.');
+    }
+
+    /**
+     * @param PublicKey $ownerPubKey
+     * @param PublicKey $programId
+     * @return PublicKey
+     */
+    public function getTokenAccount(PublicKey $ownerPubKey, PublicKey $programId): PublicKey
+    {
+        $account = null;
+        try {
+            $res = $this->provider->web3->getParsedTokenAccountsByOwner(
+                $ownerPubKey->toBase58(),
+                [
+                    'mint' => $this->getAddress(),
+                    'programId' => $programId->toBase58()
+                ],
+                Commitment::confirmed()
+            );
+            if (!isset($res[0])) {
+                $account = null;
+            } else {
+                $account = $res[0]->getPubkey();
+            }
+        } catch (\Exception $e) {
+            $account = null;
+        }
+
+        if (null === $account) {
+            $account = SplTokenProgram::getAssociatedTokenAddress(
+                $this->pubKey,
+                $ownerPubKey,
+                false,
+                $programId
+            );
+        }
+
+        return $account;
     }
 }

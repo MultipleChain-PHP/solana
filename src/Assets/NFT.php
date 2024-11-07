@@ -182,19 +182,8 @@ class NFT extends Contract implements NftInterface
         $receiverPubKey = new PublicKey($receiver);
         $programId = $this->getProgramId($nftPubKey);
 
-        $ownerAccount = SplTokenProgram::getAssociatedTokenAddress(
-            $nftPubKey,
-            $ownerPubKey,
-            false,
-            $programId
-        );
-
-        $receiverAccount = SplTokenProgram::getAssociatedTokenAddress(
-            $nftPubKey,
-            $receiverPubKey,
-            false,
-            $programId
-        );
+        $ownerAccount = $this->getTokenAccount($ownerPubKey, $programId);
+        $receiverAccount = $this->getTokenAccount($receiverPubKey, $programId);
 
         if (!$this->provider->web3->getParsedAccountInfo($receiverAccount->toString())) {
             $transaction->add(
@@ -247,12 +236,7 @@ class NFT extends Contract implements NftInterface
         $spenderPubKey = new PublicKey($spender);
         $programId = $this->getProgramId($nftPubKey);
 
-        $ownerAccount = SplTokenProgram::getAssociatedTokenAddress(
-            $nftPubKey,
-            $ownerPubKey,
-            false,
-            $programId
-        );
+        $ownerAccount = $this->getTokenAccount($ownerPubKey, $programId);
 
         $transaction->add(
             SplTokenProgram::createApproveInstruction(

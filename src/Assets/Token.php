@@ -219,19 +219,8 @@ class Token extends Contract implements TokenInterface
         $receiverPubKey = new PublicKey($receiver);
         $transferAmount = $this->fromAmount($amount);
 
-        $ownerAccount = SplTokenProgram::getAssociatedTokenAddress(
-            $this->pubKey,
-            $ownerPubKey,
-            false,
-            $programId
-        );
-
-        $receiverAccount = SplTokenProgram::getAssociatedTokenAddress(
-            $this->pubKey,
-            $receiverPubKey,
-            false,
-            $programId
-        );
+        $ownerAccount = $this->getTokenAccount($ownerPubKey, $programId);
+        $receiverAccount = $this->getTokenAccount($receiverPubKey, $programId);
 
         if (!$this->provider->web3->getParsedAccountInfo($receiverAccount->toString())) {
             $transaction->add(
@@ -283,12 +272,7 @@ class Token extends Contract implements TokenInterface
         $spenderPubKey = new PublicKey($spender);
         $approveAmount = $this->fromAmount($amount);
 
-        $ownerAccount = SplTokenProgram::getAssociatedTokenAddress(
-            $this->pubKey,
-            $ownerPubKey,
-            false,
-            $programId
-        );
+        $ownerAccount = $this->getTokenAccount($ownerPubKey, $programId);
 
         $transaction->add(
             SplTokenProgram::createApproveInstruction(
